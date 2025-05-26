@@ -11,9 +11,13 @@ static bool rv3028_success = false;
 static RTC_PCF8563 rtc_8563;
 static bool rtc_8563_success = false;
 
+static RTC_PCF8523 rtc_8523;
+static bool rtc_8523_success = false;
+
 #define DS3231_ADDRESS   0x68
 #define RV3028_ADDRESS   0x52
 #define PCF8563_ADDRESS  0x51
+#define PCF8523_ADDRESS  0x68
 
 bool AutoDiscoverRTCClock::i2c_probe(TwoWire& wire, uint8_t addr) {
   wire.beginTransmission(addr);
@@ -35,6 +39,9 @@ void AutoDiscoverRTCClock::begin(TwoWire& wire) {
   if(i2c_probe(wire,PCF8563_ADDRESS)){
     rtc_8563_success = rtc_8563.begin(&wire);
   }
+  if(i2c_probe(wire,PCF8523_ADDRESS)){
+    rtc_8523_success = rtc_8523.begin(&wire);
+  }
 }
 
 uint32_t AutoDiscoverRTCClock::getCurrentTime() {
@@ -54,6 +61,9 @@ uint32_t AutoDiscoverRTCClock::getCurrentTime() {
   if(rtc_8563_success){
     return rtc_8563.now().unixtime();
   }
+  if(rtc_8523_success){
+    return rtc_8523.now().unixtime();
+  }
   return _fallback->getCurrentTime();
 }
 
@@ -66,6 +76,8 @@ void AutoDiscoverRTCClock::setCurrentTime(uint32_t time) {
     rtc_rv3028.setTime(dt.year(), dt.month(), weekday, dt.day(), dt.hour(), dt.minute(), dt.second());
   } else if (rtc_8563_success) {
     rtc_8563.adjust(DateTime(time));
+  } else if (rtc_8523_success) {
+    rtc_8523.adjust(DateTime(time));
   } else {
     _fallback->setCurrentTime(time);
   }
